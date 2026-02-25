@@ -71,7 +71,7 @@ intOps =
     [ ("+", (+)),
       ("-", (-)),
       ("*", (*)),
-      ("/", (div))
+      ("/", div)
     ]
 
 boolOps :: H.HashMap String (Bool -> Bool -> Bool)
@@ -143,19 +143,29 @@ eval (CompOpExp op e1 e2) env = case H.lookup op compOps of
   Nothing -> ExnVal "No matching operator"
 --- ### If Expressions
 
-eval (IfExp e1 e2 e3) env = 
-    let v1 = eval e1 env
-     in case v1 of 
+eval (IfExp e1 e2 e3) env =
+  let v1 = eval e1 env
+   in case v1 of
         BoolVal True -> eval e2 env
         BoolVal False -> eval e3 env
         _ -> ExnVal "Condition is not a Bool"
 --- ### Functions and Function Application
 
-eval (FunExp params body) env = undefined
-eval (AppExp e1 args) env = undefined
+eval (FunExp params body) env = CloVal params body env
+eval (AppExp e1 args) env =
+  case eval e1 env of
+    CloVal params body cloEnv ->
+      let argVals = map (`eval` env) args
+          newBindings = H.fromList (zip params argVals)
+          newEnv = H.union newBindings cloEnv
+       in eval body newEnv
+    _ -> ExnVal "Apply to non-closure"
 --- ### Let Expressions
 
-eval (LetExp pairs body) env = undefined
+eval (LetExp pairs body) env =
+  let newBindings = H.fromList $ map (\(x, e) -> (x, eval e env)) pairs
+      newEnv = H.union newBindings env
+   in eval body newEnv
 
 --- Statements
 --- ----------
