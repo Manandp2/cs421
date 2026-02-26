@@ -180,10 +180,14 @@ exec (PrintStmt e) penv env = (val, penv, env)
 
 --- ### Set Statements
 
-exec (SetStmt var e) penv env = undefined
+exec (SetStmt var e) penv env = ("", penv, H.union env $ H.fromList [(var, eval e env)])
 --- ### Sequencing
 
-exec (SeqStmt []) penv env = undefined
+exec (SeqStmt s) penv env = foldl folder ("", penv, env) s
+  where
+    folder (currOut, currPenv, currEnv) smt =
+      let (nextOut, nextPenv, nextEnv) = exec smt currPenv currEnv
+       in (currOut ++ nextOut, nextPenv, nextEnv)
 --- ### If Statements
 
 exec (IfStmt e1 s1 s2) penv env = undefined
