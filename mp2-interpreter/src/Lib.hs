@@ -190,8 +190,12 @@ exec (SeqStmt s) penv env = foldl folder ("", penv, env) s
        in (currOut ++ nextOut, nextPenv, nextEnv)
 --- ### If Statements
 
-exec (IfStmt e1 s1 s2) penv env = undefined
+exec (IfStmt e1 s1 s2) penv env =
+  case eval e1 env of
+    BoolVal True -> exec s1 penv env
+    BoolVal False -> exec s2 penv env
+    _ -> ("exn: Condition is not a Bool", penv, env)
 --- ### Procedure and Call Statements
 
-exec p@(ProcedureStmt name args body) penv env = undefined
+exec p@(ProcedureStmt name args body) penv env = ("", H.union penv (H.fromList [(name, p)]), env)
 exec (CallStmt name args) penv env = undefined
