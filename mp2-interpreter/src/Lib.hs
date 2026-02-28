@@ -198,4 +198,11 @@ exec (IfStmt e1 s1 s2) penv env =
 --- ### Procedure and Call Statements
 
 exec p@(ProcedureStmt name args body) penv env = ("", H.union penv (H.fromList [(name, p)]), env)
-exec (CallStmt name args) penv env = undefined
+exec (CallStmt name args) penv env = 
+  case H.lookup name penv of 
+    Just (ProcedureStmt _ params body) -> 
+      let newVals = map (`eval` env) args
+          newBindings = H.fromList $ zip params newVals
+          newEnv = H.union env newBindings
+      in exec body penv newEnv
+    Nothing -> ("Procedure" ++ name ++ "undefined", penv, env)
