@@ -180,7 +180,7 @@ exec (PrintStmt e) penv env = (val, penv, env)
 
 --- ### Set Statements
 
-exec (SetStmt var e) penv env = ("", penv, H.union env $ H.fromList [(var, eval e env)])
+exec (SetStmt var e) penv env = ("", penv, H.insert var (eval e env) env)
 --- ### Sequencing
 
 exec (SeqStmt s) penv env = foldl folder ("", penv, env) s
@@ -203,6 +203,6 @@ exec (CallStmt name args) penv env =
     Just (ProcedureStmt _ params body) -> 
       let newVals = map (`eval` env) args
           newBindings = H.fromList $ zip params newVals
-          newEnv = H.union env newBindings
+          newEnv = H.union newBindings env 
       in exec body penv newEnv
     Nothing -> ("Procedure" ++ name ++ "undefined", penv, env)
