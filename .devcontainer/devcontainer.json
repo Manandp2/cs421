@@ -20,30 +20,22 @@
     }
   },
 
-  // Mount workspace and set working directory
   "workspaceMount": "source=${localWorkspaceFolder},target=/home/student/workspace,type=bind",
   "workspaceFolder": "/home/student/workspace",
-
-  // Run as the student user (important for PATH and permissions)
   "remoteUser": "student",
-
-  // Update container user UID to match host user (helps with file permissions on Linux/macOS)
   "updateRemoteUserUID": true,
 
-  // Named volumes for Haskell tools (persist across container rebuilds)
   "mounts": [
     "source=cs421-ghcup,target=/home/student/.ghcup,type=volume",
     "source=cs421-stack,target=/home/student/.stack,type=volume",
-    "source=cs421-cabal,target=/home/student/.cabal,type=volume"
+    "source=cs421-cabal,target=/home/student/.cabal,type=volume",
+    // NEW: persist Claude Code config across rebuilds
+    "source=${localEnv:HOME}/.claude,target=/home/student/.claude,type=bind,consistency=cached"
   ],
 
-  // Fix permissions on mounted workspace after container creation
-  "postCreateCommand": "sudo chown -R student:student /home/student/workspace",
-
-  // Keep container running
+  // Install Node.js + Claude Code, then fix permissions
+  "postCreateCommand": "sudo chown -R student:student /home/student/workspace 2>/dev/null || true && curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs && sudo npm install -g @anthropic-ai/claude-code",
   "overrideCommand": true,
-
-  // Docker run arguments for better network reliability
   "runArgs": [
     "--dns=8.8.8.8",
     "--dns=8.8.4.4"
