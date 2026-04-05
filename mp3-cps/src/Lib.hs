@@ -103,22 +103,63 @@ gensym i = ("v" ++ show i, i + 1)
 --- ### Define `isSimple`
 
 isSimple :: Exp -> Bool
-isSimple = undefined
+isSimple (IntExp _) = True
+isSimple (VarExp _) = True
+isSimple (AppExp _ _) = False
+isSimple (OpExp _ e1 e2) = isSimple e1 && isSimple e2
+isSimple (IfExp e1 e2 e3) = isSimple e1 && isSimple e2 && isSimple e3
 
 --- ### Define `cpsExp` - Overview
 
 cpsExp :: Exp -> Exp -> Integer -> (Exp, Integer)
-cpsExp = undefined
-
 --- #### Define `cpsExp` for Integer and Variable Expressions
 
+cpsExp (IntExp i) k n = (AppExp k (IntExp i), n)
+cpsExp (VarExp v) k n = (AppExp k (VarExp v), n)
 --- #### Define `cpsExp` for Application Expressions
 
+cpsExp (AppExp f e) k n
+  | isSimple e = (AppExp (AppExp f e) k, n)
+  | otherwise =
+      let (v, n1) = gensym n
+       in cpsExp e (LamExp v (AppExp (AppExp f (VarExp v)) k)) n1
 --- #### Define `cpsExp` for Operator Expressions
 
+cpsExp (OpExp op e1 e2) k n
+  | simple1 && simple2 =
+      (AppExp k (OpExp op e1 e2), n)
+  | not simple1 && simple2 =
+      let (v, n1) = gensym n
+       in cpsExp e1 (LamExp v (AppExp k (OpExp op (VarExp v) e2))) n1
+  | simple1 && not simple2 =
+      let (v, n1) = gensym n
+       in cpsExp e2 (LamExp v (AppExp k (OpExp op e1 (VarExp v)))) n1
+  | otherwise =
+      let (v1, n1) = gensym n
+          (v2, n2) = gensym n1
+          (e2', n3) = cpsExp e2 (LamExp v2 (AppExp k (OpExp op (VarExp v1) (VarExp v2)))) n2
+       in cpsExp e1 (LamExp v1 e2') n3
+  where
+    simple1 = isSimple e1
+    simple2 = isSimple e2
+
 --- #### Define `cpsExp` for If Expressions
+
+cpsExp (IfExp e1 e2 e3) k n
+  | isSimple e1 =
+      let (e2', n1) = cpsExp e2 k n
+          (e3', n2) = cpsExp e3 k n1
+       in (IfExp e1 e2' e3', n2)
+  | otherwise =
+      let (v, n1) = gensym n
+          (e2', n2) = cpsExp e2 k n1
+          (e3', n3) = cpsExp e3 k n2
+          cont = LamExp v (IfExp (VarExp v) e2' e3')
+       in cpsExp e1 cont n3
 
 --- ### Define `cpsDecl`
 
 cpsDecl :: Stmt -> Stmt
-cpsDecl = undefined
+cpsDecl (Decl f params body) =
+  let (body', _) = cpsExp body (VarExp "k") 1
+   in Decl f (params ++ ["k"]) body'
