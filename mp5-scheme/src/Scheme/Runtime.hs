@@ -146,10 +146,9 @@ isList :: [Val] -> EvalState Val
 isList = const $ unimplemented "Primitive function `list?`"
 
 -- Primitive function `symbol?` predicate
+-- TODO
 isSymbol :: [Val] -> EvalState Val
-isSymbol [Symbol x] = return $ Boolean True
-isSymbol [_] = return $ Boolean False
-isSymbol e =  throwError $ UnexpectedArgs e
+isSymbol = const $ unimplemented "Primitive function `symbol?`"
 
 -- Primitive function `pair?` predicate
 -- TODO
